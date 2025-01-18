@@ -9,6 +9,7 @@ import pandas as pd
 from mthree import M3Mitigation
 from qiskit import QiskitError, QuantumCircuit, transpile
 from qiskit.providers import JobV1
+from qiskit_ibm_runtime import RuntimeJobV2
 from tqdm import tqdm
 
 from ._components.__init__ import certification_probability_upper_bound
@@ -105,7 +106,7 @@ def _mitigate(
 
 
 def _extract_result_from_job(
-    job: JobV1, target: int, ancilla: int, i: int, name: str
+    job: JobV1 | RuntimeJobV2, target: int, ancilla: int, i: int, name: str
 ) -> Optional[ResultForCircuit]:
     """Extract meaningful information from job and wrap them in serializable object.
 
@@ -121,9 +122,10 @@ def _extract_result_from_job(
     :return: object containing results or None if the provided job was not successful.
     """
     try:
-        result = {"name": name, "histogram": job.result().get_counts()[i]}
+        result = {"name": name, "histogram": job.result()[i].join_data().get_counts()}
     except QiskitError:
         return None
+
     try:
         # We ignore some typing errors, since we are essentially accessing attributes that might
         # not exist according to their base classes.
@@ -342,7 +344,7 @@ def fetch_statuses(async_results: FourierCertificationAsyncResult) -> Dict[str, 
     jobs = retrieve_jobs(job_ids)
     logger.info("Done")
 
-    return dict(Counter(job.status().name for job in jobs))
+    return dict(Counter(str(job.status()) for job in jobs))
 
 
 def resolve_results(

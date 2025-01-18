@@ -121,7 +121,7 @@ def _extract_result_from_job(
     :return: object containing results or None if the provided job was not successful.
     """
     try:
-        result = {"name": name, "histogram": job.result().get_counts()[i]}
+        result = {"name": name, "histogram": job.result()[i].join_data().get_counts()}
     except QiskitError:
         return None
     try:
@@ -315,7 +315,7 @@ def fetch_statuses(async_results: FourierDiscriminationAsyncResult) -> Dict[str,
     jobs = retrieve_jobs(job_ids)
     logger.info("Done")
 
-    return dict(Counter(job.status().name for job in jobs))
+    return dict(Counter(str(job.status()) for job in jobs))
 
 
 def resolve_results(
